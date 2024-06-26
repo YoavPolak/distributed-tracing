@@ -22,7 +22,7 @@ services:
     healthcheck:
       interval: 5s
       retries: 10
-      test: curl --write-out 'HTTP %{http_code}' --fail --silent --output /dev/null http://localhost:8888/hello
+      test: curl --write-out 'HTTP %{http_code}' --fail --silent --output /dev/null http://localhost:8888/rolldice?rolls=12
 
   collector:
     image: otel/opentelemetry-collector:latest

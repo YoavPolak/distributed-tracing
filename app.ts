@@ -5,7 +5,7 @@ import { rollTheDice } from './dice';
 
 const tracer = trace.getTracer('dice-server', '0.1.0');
 
-const PORT: number = parseInt(process.env.PORT || '8080');
+const PORT: number = parseInt(process.env.PORT || '8888');
 const app: Express = express();
 
 app.get('/rolldice', (req, res) => {
