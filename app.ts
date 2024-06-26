@@ -1,6 +1,9 @@
 /*app.ts*/
-import express, { Request, Express } from 'express';
+import { trace } from '@opentelemetry/api';
+import express, { Express } from 'express';
 import { rollTheDice } from './dice';
+
+const tracer = trace.getTracer('dice-server', '0.1.0');
 
 const PORT: number = parseInt(process.env.PORT || '8080');
 const app: Express = express();
