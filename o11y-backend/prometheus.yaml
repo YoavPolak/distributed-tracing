@@ -7,3 +7,7 @@ scrape_configs:
     scrape_interval: 5s
     static_configs:
       - targets: [ 'collector:6666' ]
+  - job_name: 'hello-app'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['hello-app:9464']

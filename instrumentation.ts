@@ -1,39 +1,53 @@
 import { Resource } from '@opentelemetry/resources';
-import {
-  SEMRESATTRS_SERVICE_NAME,
-  SEMRESATTRS_SERVICE_VERSION,
-} from '@opentelemetry/semantic-conventions';
-import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
-import {
-  BatchSpanProcessor,
-  ConsoleSpanExporter,
-} from '@opentelemetry/sdk-trace-base';
-
-const resource = Resource.default().merge(
-  new Resource({
-    [SEMRESATTRS_SERVICE_NAME]: 'hello-app',
-    [SEMRESATTRS_SERVICE_VERSION]: '0.1.0',
-  }),
-);
-
-const provider = new WebTracerProvider({
-  resource: resource,
-});
-const exporter = new ConsoleSpanExporter();
-const processor = new BatchSpanProcessor(exporter);
-provider.addSpanProcessor(processor);
-
-provider.register();
-
-
-import * as opentelemetry from '@opentelemetry/sdk-node';
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
+import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
+import { MeterProvider } from '@opentelemetry/sdk-metrics';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
+import { registerInstrumentations } from '@opentelemetry/instrumentation';
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 
-const sdk = new opentelemetry.NodeSDK({
-  metricReader: new PrometheusExporter({
-    port: 4317, // optional - default is 9464
+// Set up tracing
+const traceExporter = new OTLPTraceExporter({
+  url: 'http://collector:5555',
+});
+
+const tracerProvider = new NodeTracerProvider({
+  resource: new Resource({
+    [SemanticResourceAttributes.SERVICE_NAME]: 'hello-app-yoav',
+    [SemanticResourceAttributes.SERVICE_VERSION]: '1.0.0',
+    [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: 'development',
   }),
+});
+
+tracerProvider.addSpanProcessor(new SimpleSpanProcessor(traceExporter));
+tracerProvider.register();
+
+// Set up metrics
+const prometheusExporter = new PrometheusExporter({
+  port: 9464
+}, () => {
+  console.log('Prometheus scrape endpoint: http://localhost:9464/metrics');
+});
+
+const meterProvider = new MeterProvider({
+  resource: new Resource({
+    [SemanticResourceAttributes.SERVICE_NAME]: 'hello-app-yoav',
+    [SemanticResourceAttributes.SERVICE_VERSION]: '1.0.0',
+    [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: 'development',
+  }),
+});
+
+meterProvider.addMetricReader(prometheusExporter);
+
+registerInstrumentations({
+  tracerProvider,
+  meterProvider,
   instrumentations: [getNodeAutoInstrumentations()],
 });
-sdk.start();
+
+// No need to call start on tracerProvider or meterProvider
+// They should automatically start once registered
+
+console.log('Prometheus scrape endpoint: http://localhost:9464/metrics');
